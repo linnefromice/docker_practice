@@ -2,6 +2,13 @@
 
 - postgre client app sample
 
+## app-go
+
+- Use Go
+- command
+  - go get github.com/lib/pq
+  - go run main.go
+
 ## app-typescript
 
 - Use Typescript
