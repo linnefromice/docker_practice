@@ -5,6 +5,9 @@
 ## app-go
 
 - Use go
+- command
+  - go get -u "go.mongodb.org/mongo-driver/mongo"
+  - go run main.go
 
 ## app-node
 
