@@ -3,9 +3,11 @@
 ## Overview
 
 - Practice docker-compose
-  - using python
+  - using python3
   - having client/server folder
+    - send html from server
+    - print html content using client
 
 ## Reference
 
-https://herewecode.io/blog/a-beginners-guide-to-docker-how-to-create-a-client-server-side-with-docker-compose/
+- [Commentary](https://herewecode.io/blog/a-beginners-guide-to-docker-how-to-create-a-client-server-side-with-docker-compose/)
