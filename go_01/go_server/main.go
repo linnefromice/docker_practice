@@ -2,19 +2,22 @@ package main
 
 import (
 	"net/http"
+	"fmt"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
-	"gorm.io/driver/sqlite"
-)
-
-// Constant
-const (
-	dbName = "datas.db"
+	"gorm.io/driver/mysql"
 )
 
 /* Models */
+const (
+	dbUser="user"
+	dbPassword="user"
+	dbHost="db"
+	dbPort=3306
+	dbName="master"
+)
 
 // User ユーザ
 type User struct {
@@ -62,7 +65,7 @@ func health(c echo.Context) error {
 }
 
 func findUsers(c echo.Context) error {
-	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
@@ -71,7 +74,7 @@ func findUsers(c echo.Context) error {
 	return c.JSON(http.StatusOK, users)
 }
 func findUser(c echo.Context) error {
-	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
@@ -95,7 +98,7 @@ func createUser(c echo.Context) error {
 	if err := c.Validate(request); err != nil {
 	   return err
 	}
-	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
@@ -104,19 +107,22 @@ func createUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-func initialize() {
-	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
+func initialize(c echo.Context) error {
+	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database (Intialize)")
+		// panic("failed to connect database (Initialize)")
+		return c.NoContent(http.StatusInternalServerError)
 	}
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Project{})
 	db.AutoMigrate(&Task{})
+	return c.NoContent(http.StatusOK)
 }
 func main() {
-	initialize()
+	// initialize()
 	e := echo.New()
 	e.GET("/health", health)
+	e.GET("/initialize", initialize)
 	e.GET("/users", findUsers)
 	e.GET("/user/:id", findUser)
 	e.POST("/user/create", createUser)
