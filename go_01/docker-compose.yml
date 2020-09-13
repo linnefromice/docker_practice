@@ -1,6 +1,7 @@
 version: "3.1"
 services: 
     db:
+        container_name: mysql
         image: mysql
         command: --default-authentication-plugin=mysql_native_password
         restart: always
@@ -14,6 +15,7 @@ services:
         ports: 
             - 3306:3306
     adminer:
+        container_name: adminer
         image: adminer
         restart: always
         ports:
@@ -21,6 +23,7 @@ services:
         depends_on:
             - db
     server:
-        build: go_app
+        container_name: server
+        build: go_server
         ports: 
-            - "5000:5000"
+            - 5000:5000

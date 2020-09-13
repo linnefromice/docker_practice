@@ -4,4 +4,4 @@ COPY . /go/src/app
 WORKDIR /go/src/app
 RUN go build .
 EXPOSE 5000
-CMD [ "./go_app" ]
+CMD [ "./go_server" ]

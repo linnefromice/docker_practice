@@ -1,4 +1,4 @@
-module linnefromice/go_app
+module linnefromice/go_server
 
 go 1.15
 
