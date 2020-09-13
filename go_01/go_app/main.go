@@ -75,19 +75,25 @@ func findUser(c echo.Context) error {
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	id, _ := strconv.Atoi(c.Param("id"))
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
 	var user User
 	db.First(&user, id)
 	return c.JSON(http.StatusOK, user)
 }
 func createUser(c echo.Context) error {
 	type Request struct {
-		Name  string `json:"name"`
-		Email string `json:"email"`
+		Name  string `json:"name" validate:"required"`
+		Email string `json:"email" validate:"required,email"`
 	}
 	request := new(Request)
 	if err := c.Bind(request); err != nil {
-	  return c.NoContent(http.StatusBadRequest)
+	   return c.NoContent(http.StatusBadRequest)
+	}
+	if err := c.Validate(request); err != nil {
+	   return err
 	}
 	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
 	if err != nil {
