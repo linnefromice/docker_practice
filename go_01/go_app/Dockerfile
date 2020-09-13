@@ -3,6 +3,6 @@ LABEL maintainer "linnefromice"
 COPY . /go/src/app
 WORKDIR /go/src/app
 RUN go mod download
-WORKDIR /go/src/app/src
+RUN go build .
 EXPOSE 5000
-CMD [ "go", "run", "main.go" ]
+CMD [ "./app" ]
