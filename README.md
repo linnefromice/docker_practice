@@ -4,3 +4,4 @@
 - redis
 - mongodb
 - client/server with Python
+- go
