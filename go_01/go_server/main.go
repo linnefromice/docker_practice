@@ -107,22 +107,19 @@ func createUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-func initialize(c echo.Context) error {
+func initialize() {
 	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
 	if err != nil {
-		// panic("failed to connect database (Initialize)")
-		return c.NoContent(http.StatusInternalServerError)
+		panic("failed to connect database (Initialize)")
 	}
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Project{})
 	db.AutoMigrate(&Task{})
-	return c.NoContent(http.StatusOK)
 }
 func main() {
-	// initialize()
+	initialize()
 	e := echo.New()
 	e.GET("/health", health)
-	e.GET("/initialize", initialize)
 	e.GET("/users", findUsers)
 	e.GET("/user/:id", findUser)
 	e.POST("/user/create", createUser)
