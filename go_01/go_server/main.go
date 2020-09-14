@@ -10,7 +10,6 @@ import (
 	"gorm.io/driver/mysql"
 )
 
-/* Models */
 const (
 	dbUser="user"
 	dbPassword="user"
@@ -18,6 +17,10 @@ const (
 	dbPort=3306
 	dbName="master"
 )
+
+var db *gorm.DB
+
+/* Models */
 
 // User ユーザ
 type User struct {
@@ -65,19 +68,11 @@ func health(c echo.Context) error {
 }
 
 func findUsers(c echo.Context) error {
-	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
 	var users []User
 	db.Find(&users)
 	return c.JSON(http.StatusOK, users)
 }
 func findUser(c echo.Context) error {
-	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return c.NoContent(http.StatusBadRequest)
@@ -98,26 +93,26 @@ func createUser(c echo.Context) error {
 	if err := c.Validate(request); err != nil {
 	   return err
 	}
-	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
 	user := User{Name: request.Name, Email: request.Email}
 	db.Create(&user)
 	return c.JSON(http.StatusOK, user)
 }
 
-func initialize() {
-	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
+func connectDb() {
+	var err error
+	db, err = gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database (Initialize)")
 	}
+}
+
+func initializeDb() {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Project{})
 	db.AutoMigrate(&Task{})
 }
 func main() {
-	initialize()
+	
 	e := echo.New()
 	e.GET("/health", health)
 	e.GET("/users", findUsers)
@@ -125,5 +120,8 @@ func main() {
 	e.POST("/user/create", createUser)
 	e.POST("/user/update", notImplemented)
 	e.POST("/user/delete", notImplemented)
+
+	connectDb()
+	initializeDb()
 	e.Logger.Fatal(e.Start(":5000"))
 }
