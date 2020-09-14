@@ -137,6 +137,20 @@ func updateUser(c echo.Context) error {
 	db.Save(&user)
 	return c.JSON(http.StatusOK, user)
 }
+func deleteUser(c echo.Context) error {
+	type Request struct {
+		ID int `json:"id" validate:"required"`
+	}
+
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	if result := db.Delete(&User{}, request.ID); result.Error != nil {
+		return result.Error
+	}
+	return c.JSON(http.StatusOK, request)
+}
 
 
 // Main Stream
@@ -162,7 +176,7 @@ func main() {
 	e.GET("/user/:id", findUser)
 	e.POST("/user/create", createUser)
 	e.POST("/user/update", updateUser)
-	e.POST("/user/delete", notImplemented)
+	e.POST("/user/delete", deleteUser)
 
 	connectDb()
 	initializeDb()
