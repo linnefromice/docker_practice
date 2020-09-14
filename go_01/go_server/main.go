@@ -6,11 +6,11 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 	"gorm.io/driver/mysql"
 )
 
-/* Models */
 const (
 	dbUser="user"
 	dbPassword="user"
@@ -18,6 +18,19 @@ const (
 	dbPort=3306
 	dbName="master"
 )
+
+var db *gorm.DB
+
+/* Models */
+
+// Validator リクエストバリデーター
+type Validator struct {
+    validator *validator.Validate
+}
+// Validate バリデート
+func (v *Validator) Validate(i interface{}) error {
+    return v.validator.Struct(i)
+}
 
 // User ユーザ
 type User struct {
@@ -52,32 +65,22 @@ type HealthResponse struct {
 	Status int `json:"status" xml:"status"`
 }
 
-
+// API
 func notImplemented(c echo.Context) error {
 	return c.JSON(http.StatusNotImplemented, map[string]string{"message": "NotImplemented"})
 }
-
 func health(c echo.Context) error {
 	res := &HealthResponse{
 		Status: http.StatusOK,
 	}
 	return c.JSON(http.StatusOK, res)
 }
-
 func findUsers(c echo.Context) error {
-	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
 	var users []User
 	db.Find(&users)
 	return c.JSON(http.StatusOK, users)
 }
 func findUser(c echo.Context) error {
-	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return c.NoContent(http.StatusBadRequest)
@@ -93,40 +96,89 @@ func createUser(c echo.Context) error {
 	}
 	request := new(Request)
 	if err := c.Bind(request); err != nil {
-	   return c.NoContent(http.StatusBadRequest)
+	    return c.NoContent(http.StatusBadRequest)
 	}
 	if err := c.Validate(request); err != nil {
-	   return err
-	}
-	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		return err
 	}
 	user := User{Name: request.Name, Email: request.Email}
 	db.Create(&user)
 	return c.JSON(http.StatusOK, user)
 }
-
-func initialize(c echo.Context) error {
-	db, err := gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
-	if err != nil {
-		// panic("failed to connect database (Initialize)")
-		return c.NoContent(http.StatusInternalServerError)
+func updateUser(c echo.Context) error {
+	type Request struct {
+		ID int `json:"id" validate:"required"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
 	}
+
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	var user User
+	result := db.First(&user, request.ID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if err := c.Validate(request); err != nil {
+		return err
+	}
+	if len(request.Name) > 0 {
+		user.Name = request.Name
+	}
+	if len(request.Email) > 0 {
+		// Temp
+		if err := validator.New().Var(request.Email, "email"); err != nil {
+			return err
+		}
+		user.Email = request.Email
+	}
+	db.Save(&user)
+	return c.JSON(http.StatusOK, user)
+}
+func deleteUser(c echo.Context) error {
+	type Request struct {
+		ID int `json:"id" validate:"required"`
+	}
+
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	if result := db.Delete(&User{}, request.ID); result.Error != nil {
+		return result.Error
+	}
+	return c.JSON(http.StatusOK, request)
+}
+
+
+// Main Stream
+func connectDb() {
+	var err error
+	dsn := fmt.Sprintf("%v:%v@tcp(%v:%d)/%v?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
+	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database (Initialize)")
+	}
+}
+func initializeDb() {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Project{})
 	db.AutoMigrate(&Task{})
-	return c.NoContent(http.StatusOK)
 }
 func main() {
-	// initialize()
 	e := echo.New()
+	e.Debug = true
+	e.Validator = &Validator{validator: validator.New()}
 	e.GET("/health", health)
-	e.GET("/initialize", initialize)
 	e.GET("/users", findUsers)
 	e.GET("/user/:id", findUser)
 	e.POST("/user/create", createUser)
-	e.POST("/user/update", notImplemented)
-	e.POST("/user/delete", notImplemented)
+	e.POST("/user/update", updateUser)
+	e.POST("/user/delete", deleteUser)
+
+	connectDb()
+	initializeDb()
 	e.Logger.Fatal(e.Start(":5000"))
 }
