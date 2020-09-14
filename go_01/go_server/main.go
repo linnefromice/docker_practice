@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 	"gorm.io/driver/mysql"
 )
@@ -21,6 +22,15 @@ const (
 var db *gorm.DB
 
 /* Models */
+
+// Validator リクエストバリデーター
+type Validator struct {
+    validator *validator.Validate
+}
+// Validate バリデート
+func (v *Validator) Validate(i interface{}) error {
+    return v.validator.Struct(i)
+}
 
 // User ユーザ
 type User struct {
@@ -55,18 +65,16 @@ type HealthResponse struct {
 	Status int `json:"status" xml:"status"`
 }
 
-
+// API
 func notImplemented(c echo.Context) error {
 	return c.JSON(http.StatusNotImplemented, map[string]string{"message": "NotImplemented"})
 }
-
 func health(c echo.Context) error {
 	res := &HealthResponse{
 		Status: http.StatusOK,
 	}
 	return c.JSON(http.StatusOK, res)
 }
-
 func findUsers(c echo.Context) error {
 	var users []User
 	db.Find(&users)
@@ -88,16 +96,17 @@ func createUser(c echo.Context) error {
 	}
 	request := new(Request)
 	if err := c.Bind(request); err != nil {
-	   return c.NoContent(http.StatusBadRequest)
+	    return c.NoContent(http.StatusBadRequest)
 	}
 	if err := c.Validate(request); err != nil {
-	   return err
+		return err
 	}
 	user := User{Name: request.Name, Email: request.Email}
 	db.Create(&user)
 	return c.JSON(http.StatusOK, user)
 }
 
+// Main Stream
 func connectDb() {
 	var err error
 	db, err = gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
@@ -105,15 +114,15 @@ func connectDb() {
 		panic("failed to connect database (Initialize)")
 	}
 }
-
 func initializeDb() {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Project{})
 	db.AutoMigrate(&Task{})
 }
 func main() {
-	
 	e := echo.New()
+	e.Debug = true
+	e.Validator = &Validator{validator: validator.New()}
 	e.GET("/health", health)
 	e.GET("/users", findUsers)
 	e.GET("/user/:id", findUser)
