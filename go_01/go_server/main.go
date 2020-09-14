@@ -142,7 +142,8 @@ func updateUser(c echo.Context) error {
 // Main Stream
 func connectDb() {
 	var err error
-	db, err = gorm.Open(mysql.Open(fmt.Sprintf("%v:%v@tcp(%v:%d)/%v", dbUser, dbPassword, dbHost, dbPort, dbName)), &gorm.Config{})
+	dsn := fmt.Sprintf("%v:%v@tcp(%v:%d)/%v?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
+	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database (Initialize)")
 	}
