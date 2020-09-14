@@ -105,6 +105,39 @@ func createUser(c echo.Context) error {
 	db.Create(&user)
 	return c.JSON(http.StatusOK, user)
 }
+func updateUser(c echo.Context) error {
+	type Request struct {
+		ID int `json:"id" validate:"required"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	var user User
+	result := db.First(&user, request.ID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if err := c.Validate(request); err != nil {
+		return err
+	}
+	if len(request.Name) > 0 {
+		user.Name = request.Name
+	}
+	if len(request.Email) > 0 {
+		// Temp
+		if err := validator.New().Var(request.Email, "email"); err != nil {
+			return err
+		}
+		user.Email = request.Email
+	}
+	db.Save(&user)
+	return c.JSON(http.StatusOK, user)
+}
+
 
 // Main Stream
 func connectDb() {
@@ -127,7 +160,7 @@ func main() {
 	e.GET("/users", findUsers)
 	e.GET("/user/:id", findUser)
 	e.POST("/user/create", createUser)
-	e.POST("/user/update", notImplemented)
+	e.POST("/user/update", updateUser)
 	e.POST("/user/delete", notImplemented)
 
 	connectDb()
