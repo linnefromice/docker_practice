@@ -267,6 +267,11 @@ func main() {
 	e.POST("/project/create", createProject)
 	e.POST("/project/update", updateProject)
 	e.POST("/project/delete", deleteProject)
+	e.GET("/tasks", notImplemented)
+	e.GET("/task/:id", notImplemented)
+	e.POST("/task/create", notImplemented)
+	e.POST("/task/update", notImplemented)
+	e.POST("/task/delete", notImplemented)
 
 	connectDb()
 	initializeDb()
