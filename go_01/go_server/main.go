@@ -259,11 +259,13 @@ func main() {
 	e.GET("/health", health)
 	e.GET("/users", findUsers)
 	e.GET("/user/:id", findUser)
+	e.GET("/user/:id/tasks", notImplemented) // findTaskSpecifiedUser
 	e.POST("/user/create", createUser)
 	e.POST("/user/update", updateUser)
 	e.POST("/user/delete", deleteUser)
 	e.GET("/projects", findProjects)
 	e.GET("/project/:id", findProject)
+	e.GET("/project/:id/tasks", notImplemented) // findTaskSpecifiedProject
 	e.POST("/project/create", createProject)
 	e.POST("/project/update", updateProject)
 	e.POST("/project/delete", deleteProject)
