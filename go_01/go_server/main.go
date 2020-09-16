@@ -116,13 +116,13 @@ func updateUser(c echo.Context) error {
 	if err := c.Bind(request); err != nil {
 		return c.NoContent(http.StatusBadRequest)
 	}
+	if err := c.Validate(request); err != nil {
+		return err
+	}
 	var user User
 	result := db.First(&user, request.ID)
 	if result.Error != nil {
 		return result.Error
-	}
-	if err := c.Validate(request); err != nil {
-		return err
 	}
 	if len(request.Name) > 0 {
 		user.Name = request.Name
@@ -151,7 +151,92 @@ func deleteUser(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, request)
 }
+func findProjects(c echo.Context) error {
+	var projects []Project
+	db.Find(&projects)
+	return c.JSON(http.StatusOK, projects)
+}
+func findProject(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	var project Project
+	db.First(&project, id)
+	return c.JSON(http.StatusOK, project)
+}
+func createProject(c echo.Context) error {
+	type Request struct {
+		Name string `json:"name" validate:"required"`
+		Description string `json:"description" validate:"required"`
+		StartDate string `json:"start_date" validate:"required"` 
+		EndDate string `json:"end_date" validate:"required"`
+	}
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	if err := c.Validate(request); err != nil {
+		return err
+	}
+	project := Project{
+		Name: request.Name,
+		Description: request.Description,
+		StartDate: request.StartDate,
+		EndDate: request.EndDate,
+	}
+	db.Create(&project)
+	return c.JSON(http.StatusOK, project)
+}
+func updateProject(c echo.Context) error {
+	type Request struct {
+		ID string `json:"id" validate:"required"`
+		Name string `json:"name"`
+		Description string `json:"description"`
+		StartDate string `json:"start_date"` 
+		EndDate string `json:"end_date"`
+	}
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	if err := c.Validate(request); err != nil {
+		return err
+	}
+	var project Project
+	result := db.First(&project, request.ID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if len(request.Name) > 0 {
+		project.Name = request.Name
+	}
+	if len(request.Description) > 0 {
+		project.Description = request.Description
+	}
+	if len(request.StartDate) > 0 {
+		project.StartDate = request.StartDate
+	}
+	if len(request.EndDate) > 0 {
+		project.EndDate = request.EndDate
+	}
+	db.Save(&project)
+	return c.JSON(http.StatusOK, project)
+}
+func deleteProject(c echo.Context) error {
+	type Request struct {
+		ID int `json:"id" validate:"required"`
+	}
 
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	if result := db.Delete(&Project{}, request.ID); result.Error != nil {
+		return result.Error
+	}
+	return c.JSON(http.StatusOK, request)
+}
 
 // Main Stream
 func connectDb() {
@@ -174,9 +259,21 @@ func main() {
 	e.GET("/health", health)
 	e.GET("/users", findUsers)
 	e.GET("/user/:id", findUser)
+	e.GET("/user/:id/tasks", notImplemented) // findTaskSpecifiedUser
 	e.POST("/user/create", createUser)
 	e.POST("/user/update", updateUser)
 	e.POST("/user/delete", deleteUser)
+	e.GET("/projects", findProjects)
+	e.GET("/project/:id", findProject)
+	e.GET("/project/:id/tasks", notImplemented) // findTaskSpecifiedProject
+	e.POST("/project/create", createProject)
+	e.POST("/project/update", updateProject)
+	e.POST("/project/delete", deleteProject)
+	e.GET("/tasks", notImplemented)
+	e.GET("/task/:id", notImplemented)
+	e.POST("/task/create", notImplemented)
+	e.POST("/task/update", notImplemented)
+	e.POST("/task/delete", notImplemented)
 
 	connectDb()
 	initializeDb()
