@@ -237,6 +237,114 @@ func deleteProject(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, request)
 }
+func findTasks(c echo.Context) error {
+	var tasks []Task
+	db.Find(&tasks)
+	return c.JSON(http.StatusOK, tasks)
+}
+func findTask(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	var task Task
+	db.First(&task, id)
+	return c.JSON(http.StatusOK, task)
+}
+func createTask(c echo.Context) error {
+	type Request struct {
+		Title string `json:"title" validate:"required"`
+		Description string `json:"description" validate:"required"`
+		Status string `json:"status" validate:"required"`
+		StartDate string `json:"start_date" validate:"required"`
+		EndDate string `json:"end_date" validate:"required"`
+		ProjectID uint `json:"project_id"`
+		UserID uint `json:"user_id"`
+	}
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	if err := c.Validate(request); err != nil {
+		return err
+	}
+	task := Task{
+		Title: request.Title,
+		Description: request.Description,
+		Status: request.Status,
+		StartDate: request.StartDate,
+		EndDate: request.EndDate,
+	}
+	if request.ProjectID != 0 {
+		task.ProjectID = request.ProjectID
+	}
+	if request.UserID != 0 {
+		task.UserID = request.UserID
+	}
+	db.Create(&task)
+	return c.JSON(http.StatusOK, task)
+}
+func updateTask(c echo.Context) error {
+	type Request struct {
+		ID string `json:"id" validate:"required"`
+		Title string `json:"title"`
+		Description string `json:"description"`
+		Status string `json:"status"`
+		StartDate string `json:"start_date"`
+		EndDate string `json:"end_date"`
+		ProjectID uint `json:"project_id"`
+		UserID uint `json:"user_id"`
+	}
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	if err := c.Validate(request); err != nil {
+		return err
+	}
+	var task Task
+	result := db.First(&task, request.ID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if len(request.Title) > 0 {
+		task.Title = request.Title
+	}
+	if len(request.Description) > 0 {
+		task.Description = request.Description
+	}
+	if len(request.Status) > 0 {
+		task.Status = request.Status
+	}
+	if len(request.StartDate) > 0 {
+		task.StartDate = request.StartDate
+	}
+	if len(request.EndDate) > 0 {
+		task.EndDate = request.EndDate
+	}
+	if request.ProjectID != 0 {
+		task.ProjectID = request.ProjectID
+	}
+	if request.UserID != 0 {
+		task.UserID = request.UserID
+	}
+	db.Save(&task)
+	return c.JSON(http.StatusOK, task)
+}
+func deleteTask(c echo.Context) error {
+	type Request struct {
+		ID int `json:"id" validate:"required"`
+	}
+
+	request := new(Request)
+	if err := c.Bind(request); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	if result := db.Delete(&Task{}, request.ID); result.Error != nil {
+		return result.Error
+	}
+	return c.JSON(http.StatusOK, request)
+}
 
 // Main Stream
 func connectDb() {
@@ -259,21 +367,21 @@ func main() {
 	e.GET("/health", health)
 	e.GET("/users", findUsers)
 	e.GET("/user/:id", findUser)
-	e.GET("/user/:id/tasks", notImplemented) // findTaskSpecifiedUser
+	e.GET("/user/:id/tasks", notImplemented) // findTasksSpecifiedUser
 	e.POST("/user/create", createUser)
 	e.POST("/user/update", updateUser)
 	e.POST("/user/delete", deleteUser)
 	e.GET("/projects", findProjects)
 	e.GET("/project/:id", findProject)
-	e.GET("/project/:id/tasks", notImplemented) // findTaskSpecifiedProject
+	e.GET("/project/:id/tasks", notImplemented) // findTasksSpecifiedProject
 	e.POST("/project/create", createProject)
 	e.POST("/project/update", updateProject)
 	e.POST("/project/delete", deleteProject)
-	e.GET("/tasks", notImplemented)
-	e.GET("/task/:id", notImplemented)
-	e.POST("/task/create", notImplemented)
-	e.POST("/task/update", notImplemented)
-	e.POST("/task/delete", notImplemented)
+	e.GET("/tasks", findTasks)
+	e.GET("/task/:id", findTask)
+	e.POST("/task/create", createTask)
+	e.POST("/task/update", updateTask)
+	e.POST("/task/delete", deleteTask)
 
 	connectDb()
 	initializeDb()
