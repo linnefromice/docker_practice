@@ -345,6 +345,28 @@ func deleteTask(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, request)
 }
+func findTasksSpecifiedUser(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	var user User
+	var tasks []Task
+	db.First(&user, id)
+	db.Model(&user).Association("Tasks").Find(&tasks)
+	return c.JSON(http.StatusOK, tasks)
+}
+func findTasksSpecifiedProject(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	var project Project
+	var tasks []Task
+	db.First(&project, id)
+	db.Model(&project).Association("Tasks").Find(&tasks)
+	return c.JSON(http.StatusOK, tasks)
+}
 
 // Main Stream
 func connectDb() {
@@ -367,16 +389,22 @@ func main() {
 	e.GET("/health", health)
 	e.GET("/users", findUsers)
 	e.GET("/user/:id", findUser)
-	e.GET("/user/:id/tasks", notImplemented) // findTasksSpecifiedUser
 	e.POST("/user/create", createUser)
 	e.POST("/user/update", updateUser)
 	e.POST("/user/delete", deleteUser)
+	e.GET("/user/:id/tasks", findTasksSpecifiedUser)
+	e.POST("/user/:id/tasks/create", notImplemented) // createTasksSpecifiedUser
+	e.POST("/user/:id/tasks/update", notImplemented) // updateTasksSpecifiedUser
+	e.POST("/user/:id/tasks/delete", notImplemented) // deleteTasksSpecifiedUser
 	e.GET("/projects", findProjects)
 	e.GET("/project/:id", findProject)
-	e.GET("/project/:id/tasks", notImplemented) // findTasksSpecifiedProject
 	e.POST("/project/create", createProject)
 	e.POST("/project/update", updateProject)
 	e.POST("/project/delete", deleteProject)
+	e.GET("/project/:id/tasks", findTasksSpecifiedProject)
+	e.POST("/project/:id/tasks/create", notImplemented) // createTasksSpecifiedProject
+	e.POST("/project/:id/tasks/update", notImplemented) // updateTasksSpecifiedProject
+	e.POST("/project/:id/tasks/delete", notImplemented) // deleteTasksSpecifiedProject
 	e.GET("/tasks", findTasks)
 	e.GET("/task/:id", findTask)
 	e.POST("/task/create", createTask)
