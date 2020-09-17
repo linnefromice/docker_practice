@@ -350,9 +350,14 @@ func findTasksSpecifiedUser(c echo.Context) error {
 	if err != nil {
 		return c.NoContent(http.StatusBadRequest)
 	}
+	// User取得
 	var user User
 	var tasks []Task
-	db.First(&user, id)
+	result := db.First(&user, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	// Tasks取得
 	db.Model(&user).Association("Tasks").Find(&tasks)
 	return c.JSON(http.StatusOK, tasks)
 }
@@ -363,7 +368,10 @@ func findTasksSpecifiedProject(c echo.Context) error {
 	}
 	var project Project
 	var tasks []Task
-	db.First(&project, id)
+	result := db.First(&project, id)
+	if result.Error != nil {
+		return result.Error
+	}
 	db.Model(&project).Association("Tasks").Find(&tasks)
 	return c.JSON(http.StatusOK, tasks)
 }
@@ -393,18 +401,12 @@ func main() {
 	e.POST("/user/update", updateUser)
 	e.POST("/user/delete", deleteUser)
 	e.GET("/user/:id/tasks", findTasksSpecifiedUser)
-	e.POST("/user/:id/tasks/create", notImplemented) // createTasksSpecifiedUser
-	e.POST("/user/:id/tasks/update", notImplemented) // updateTasksSpecifiedUser
-	e.POST("/user/:id/tasks/delete", notImplemented) // deleteTasksSpecifiedUser
 	e.GET("/projects", findProjects)
 	e.GET("/project/:id", findProject)
 	e.POST("/project/create", createProject)
 	e.POST("/project/update", updateProject)
 	e.POST("/project/delete", deleteProject)
 	e.GET("/project/:id/tasks", findTasksSpecifiedProject)
-	e.POST("/project/:id/tasks/create", notImplemented) // createTasksSpecifiedProject
-	e.POST("/project/:id/tasks/update", notImplemented) // updateTasksSpecifiedProject
-	e.POST("/project/:id/tasks/delete", notImplemented) // deleteTasksSpecifiedProject
 	e.GET("/tasks", findTasks)
 	e.GET("/task/:id", findTask)
 	e.POST("/task/create", createTask)
