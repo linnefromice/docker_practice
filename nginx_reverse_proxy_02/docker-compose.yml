@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: ./nginx/
+      dockerfile: Dockerfile
+    image: practice0-ginx
+    container_name: practice-nginx
+    ports:
+      - 80:80
