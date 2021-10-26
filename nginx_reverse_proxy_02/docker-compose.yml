@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: ./nginx/
+      dockerfile: Dockerfile
+    image: practic-nginx
+    container_name: practice-nginx
+    ports:
+      - 80:80
+  # app-1: ビルド済みのコンテナを公開する、ファイルの変更は検知できない
+  app-1:
+    build:
+      context: ./app-1/
+      dockerfile: Dockerfile
+    image: practice-app-1
+    container_name: practice-app-1
+  # app-2: volume mount することで静的ファイルの変更を反映できるようにする
+  app-2:
+    build:
+      context: ./app-2/
+      dockerfile: Dockerfile
+    image: practice-app-2
+    container_name: practice-app-2
+    # volume mount して実行する
+    volumes:
+      - ./app-2/src:/src
+    working_dir: /src/
+    command: [sh, -c, node /src/index.js]
