@@ -3,3 +3,7 @@
 ```bash
 docker-compose up
 ```
+
+# References
+
+- [Node - Official Image | Docker Hub](https://hub.docker.com/_/node)
